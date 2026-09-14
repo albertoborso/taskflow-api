@@ -1,0 +1,5 @@
+Schema migrations for the PostgreSQL database.
+
+Run commands from the project root; see README.md for setup and verification.
+Alembic uses application environment settings and app.db.base.Base.metadata.
+Review generated revisions before applying them.

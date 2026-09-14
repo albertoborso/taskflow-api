@@ -1,0 +1,18 @@
+# Allow only the files needed to build and run the API.
+**
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!uv.lock
+!alembic.ini
+!app/
+!app/**
+!migrations/
+!migrations/**
+# Exclude sensitive files and generated caches, even inside allowed directories.
+**/.env*
+**/*secret*
+**/*.pem
+**/*.key
+**/__pycache__/
+**/*.py[cod]

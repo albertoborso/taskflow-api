@@ -1,0 +1,46 @@
+services:
+  api:
+    build: .
+    image: taskflow-api:local
+    environment:
+      APP_NAME: ${APP_NAME:-Portfolio API}
+      APP_ENVIRONMENT: production
+      APP_DB_HOST: db
+      APP_DB_PORT: "5432"
+      APP_DB_NAME: ${APP_DB_NAME:?Set APP_DB_NAME in .env}
+      APP_DB_USER: ${APP_DB_USER:?Set APP_DB_USER in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:?Set APP_JWT_SECRET in .env}
+      APP_JWT_ISSUER: ${APP_JWT_ISSUER:-portfolio-api}
+      APP_JWT_AUDIENCE: ${APP_JWT_AUDIENCE:-portfolio-api}
+      APP_ACCESS_TOKEN_MINUTES: ${APP_ACCESS_TOKEN_MINUTES:-15}
+    ports:
+      - "127.0.0.1:${API_PUBLISHED_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Single-instance local deployment: fail closed if migrations fail.
+    command:
+      - /bin/sh
+      - -c
+      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${APP_DB_NAME:?Set APP_DB_NAME in .env}
+      POSTGRES_USER: ${APP_DB_USER:?Set APP_DB_USER in .env}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${APP_DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:

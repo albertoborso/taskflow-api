@@ -1,0 +1,88 @@
+name: Backend CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Backend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      APP_ENVIRONMENT: test
+      APP_DB_HOST: 127.0.0.1
+      APP_DB_PORT: "5432"
+      APP_DB_NAME: portfolio_ci
+      APP_DB_USER: portfolio_ci
+      APP_DB_PASSWORD: ci-only-disposable-password
+      APP_JWT_ISSUER: portfolio-ci
+      APP_JWT_AUDIENCE: portfolio-ci
+      APP_ACCESS_TOKEN_MINUTES: "15"
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: portfolio_ci
+          POSTGRES_USER: portfolio_ci
+          POSTGRES_PASSWORD: ci-only-disposable-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U portfolio_ci -d portfolio_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Ensure CI does not load a local .env
+        run: test ! -e .env
+
+      - name: Set up uv and Python 3.12
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.13"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked dependencies
+        run: uv sync --locked --dev
+
+      - name: Generate a temporary JWT secret
+        run: |
+          uv run --locked python - <<'PY'
+          import os
+          import secrets
+
+          secret = secrets.token_hex(32)
+          print(f"::add-mask::{secret}")
+          with open(os.environ["GITHUB_ENV"], "a") as environment:
+              environment.write(f"APP_JWT_SECRET={secret}\n")
+          PY
+
+      - name: Lint
+        run: uv run --locked ruff check .
+
+      - name: Check formatting
+        run: uv run --locked ruff format --check .
+
+      - name: Type check
+        run: uv run --locked mypy
+
+      - name: Apply migrations
+        run: uv run --locked alembic upgrade head
+
+      - name: Check migration drift
+        run: uv run --locked alembic check
+
+      - name: Run integration tests
+        run: uv run --locked pytest
