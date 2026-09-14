@@ -269,3 +269,4 @@ or frontend. Load testing and query-plan measurements remain future work; no thr
 claims are made. `updated_at` is maintained by SQLAlchemy updates, not a database trigger.
 Before publishing, verify a GitHub-hosted CI run, configure branch protection, audit
 tracked files for secrets, and select a license. Deployment is intentionally out of scope.
+
