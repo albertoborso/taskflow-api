@@ -7,6 +7,15 @@ database integrity, and reproducible verification—not just CRUD endpoints.
 **Stack:** Python 3.12 · FastAPI · Pydantic 2 · synchronous SQLAlchemy 2 · Psycopg 3 ·
 PostgreSQL 17 · Alembic · pytest · uv · Docker Compose · GitHub Actions.
 
+## Live API
+
+Public Swagger documentation: [https://taskflow-api-1-11gt.onrender.com/docs](https://taskflow-api-1-11gt.onrender.com/docs)
+
+Health checks: `/health/live` and `/health/ready`.
+
+The Render free instance may have a cold start after inactivity, making the first
+request slower.
+
 ## Features
 
 - Registration, Argon2id password hashing, short-lived JWT login, and profile updates.
